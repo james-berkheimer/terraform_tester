@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "src/terraform_tester/version.py"
+version_scheme = "release-branch-semver"
+
+[project]
+name = "terraform_tester"
+description = "A CLI tool to create empty Python projects"
+authors = [{name = "James Berkheimer", email = "james.berkheimer@gmail.com"}]
+license = {text = "MIT"}
+dynamic = ["version"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "boto3",
+    "colorlog",
+    "python-terraform"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "tox",
+    "build",
+    "pytest",
+    "coverage"
+]
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.scripts]
+tt = "terraform_tester.main:main"
+tfstatus = "terraform_tester.main:terraform_status"
+
+[project.urls]
+homepage = "https://example.com"
+
+[tool.setuptools]
+include-package-data = true
+platforms = ["any"]
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages.find]
+exclude = ["tests"]
+namespaces = true
+where = ["src"]
