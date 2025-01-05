@@ -20,6 +20,7 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "boto3",
+    "click",
     "colorlog",
     "python-terraform"
 ]
@@ -38,7 +39,6 @@ content-type = "text/markdown"
 
 [project.scripts]
 tt = "terraform_tester.main:main"
-tfstatus = "terraform_tester.main:terraform_status"
 
 [project.urls]
 homepage = "https://example.com"

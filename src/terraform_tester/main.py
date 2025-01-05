@@ -2,88 +2,65 @@ import logging
 import os
 from pathlib import Path
 
-import boto3
-from python_terraform import Terraform
+import click
 
 from .authentication import AWSCredentials
+from .terraform_tools import (
+    tf_destroy,
+    tf_run1,
+    tf_run2,
+    tf_status,
+)
 
-project_root = Path.cwd()
+# Globals
+PROJECT_ROOT = Path.cwd()
+TERRAFORM_ROOT = Path.cwd() / "terraform"
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-os.environ["TF_LOG"] = "DEBUG"
-terraform_root = Path.cwd() / "terraform"
+# Terraform logging
+# os.environ["TF_LOG"] = "DEBUG"
 
 
-def initialize_aws_credentials():
+@click.command()
+@click.option("--destroy", is_flag=True, help="Destroy Terraform infrastructure")
+@click.option("--run-state1", is_flag=True, help="Run Terraform commands")
+@click.option("--status", is_flag=True, help="Get Terraform status")
+@click.option("--run-state2", is_flag=True, help="Run state")
+@click.option(
+    "-v",
+    "--verbosity",
+    count=True,
+    help="Increase the verbosity level of Terraform logs. Use multiple 'v's for higher verbosity: -v for WARN, -vv for INFO, -vvv for DEBUG, -vvvv for TRACE.",
+)
+def main(destroy, run_state1, status, run_state2, verbosity):
     AWSCredentials.load_credentials_from_file(
-        project_root / "tests/configs/credentials.json"
+        PROJECT_ROOT / "tests/configs/credentials.json"
     )
     aws_credentials = AWSCredentials()
     aws_credentials.verify_credentials()
 
+    verbosity_levels = {0: "ERROR", 1: "WARN", 2: "INFO", 3: "DEBUG", 4: "TRACE"}
+    if verbosity in verbosity_levels:
+        os.environ["TF_LOG"] = verbosity_levels[verbosity]
+    else:
+        os.environ["TF_LOG"] = "TRACE"
 
-def initialize_terraform():
-    tf = Terraform(working_dir=terraform_root)
-    return_code, stdout, stderr = tf.init()
-    if return_code != 0:
-        logger.error(f"Error initializing Terraform: {stderr}")
-        return None
-    logger.info("Terraform initialized successfully")
-    return tf
+    if destroy:
+        tf_destroy(TERRAFORM_ROOT)
+    elif run_state1:
+        tf_run1(TERRAFORM_ROOT)
+    elif status:
+        tf_status(TERRAFORM_ROOT)
+    elif run_state2:
+        tf_run2(TERRAFORM_ROOT)
+    else:
+        print("Please provide a valid flag. Use --help to see all options.")
 
-
-def plan_terraform(tf):
-    return_code, stdout, stderr = tf.plan(refresh=False)
-    if return_code != 0:
-        logger.error(f"Error planning Terraform: {stderr}")
-        return False
-    logger.info("Terraform plan successful")
-    return True
-
-
-def apply_terraform(tf):
-    approve = {"auto-approve": True}
-    return_code, stdout, stderr = tf.apply(skip_plan=True, **approve)
-    if return_code != 0:
-        logger.error(f"Error applying Terraform: {stderr}")
-        return False
-    logger.info("Terraform apply successful")
-    return True
-
-
-def main():
-    initialize_aws_credentials()
-    tf = initialize_terraform()
-    if tf is None:
-        return
-    if not plan_terraform(tf):
-        return
-    if not apply_terraform(tf):
-        return
     AWSCredentials.remove_credentials_from_environment()
 
 
-def terraform_status():
-    resource_address = "aws_instance.test_ec2_instance"
-    tf = Terraform(working_dir=terraform_root)
-    return_code, stdout, stderr = tf.cmd("state", "show", resource_address)
-
-    if return_code != 0:
-        logger.error(f"Error getting Terraform status: {stderr}")
-        return None
-
-    logger.info("Terraform status retrieved successfully")
-    return stdout
-
-
-def destroy_terraform(tf):
-    approve = {"auto-approve": True}
-    return_code, stdout, stderr = tf.destroy(**approve)
-    if return_code != 0:
-        logger.error(f"Error destroying Terraform infrastructure: {stderr}")
-        return False
-    logger.info("Terraform destroy successful")
-    return True
+if __name__ == "__main__":
+    main()

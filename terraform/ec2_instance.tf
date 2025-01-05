@@ -1,13 +1,22 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.41.0"
+    }
+  }
+}
+
 provider "aws" {
     region = "us-west-1"
 }
 
-resource "aws_instance" "test_ec2_instance" {
-    ami           = "ami-05057ffd3a8e2ef62"
+resource "aws_instance" "test_01_ec2_instance" {
+    ami           = "ami-0830c9faf0efc29ff"
     instance_type = "t2.micro"
 
     tags = {
-        Name = "MC_EC2Instance"
+        Name = "Test_01"
     }
 
     ebs_block_device {
